@@ -79,7 +79,7 @@ namespace net.rs64.VRCGetForUnityEditor
         }
         public static string Remove(string packageName)
         {
-            return Request($"remove {packageName}");
+            return Request($"remove --yes {packageName}");
         }
 
         public static void Upgrade()

@@ -85,7 +85,7 @@ namespace net.rs64.VRCGetForUnityEditor
 
         public static void Upgrade()
         {
-             RequestVoid("upgrade");
+            RequestVoid("upgrade");
         }
 
         public static List<string> Repositories()//URLが返ってくる
@@ -97,11 +97,11 @@ namespace net.rs64.VRCGetForUnityEditor
                 return s[s.Length - 3];
             }).Where(i => i != null).ToList();
         }
-        public static List<string> PackageNames(string urlOrName)
+        public static List<(string Name, string DisplayName)> PackageNames(string urlOrName)
         {
             var result = Request($"repo packages {urlOrName}");
             if (result == null) { return null; }
-            return result.Split("\n").Where(i => !string.IsNullOrWhiteSpace(i) && i.Contains("| ")).Select(i => i.Split("| ")?.LastOrDefault()).Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
+            return result.Split("\n").Where(i => !string.IsNullOrWhiteSpace(i) && i.Contains(" | ")).Select(i => { var names = i.Split(" | "); return (names[1], names[0]); }).ToList();
         }
 
         [Serializable]

@@ -97,7 +97,7 @@ namespace net.rs64.VRCGetForUnityEditor
                         foreach (var url in repositories)
                         {
                             var container = new Foldout();
-                            container.text = url;
+                            container.text = url.Split('/')[2];
                             container.value = false;
                             var foldingContainer = container.Q("unity-content");
                             try
@@ -125,8 +125,10 @@ namespace net.rs64.VRCGetForUnityEditor
                             var packageContainer = new VisualElement();
                             packageContainer.AddToClassList("PackageContainer");
 
-                            packageContainer.hierarchy.Add(new Label(packageName));
-                            var addButton = new Button(() => RequestVRCGet.Install(packageName));
+                            var label = new Label(packageName.DisplayName + " | " + packageName.Name);
+                            label.AddToClassList("AddPackageText");
+                            packageContainer.hierarchy.Add(label);
+                            var addButton = new Button(() => RequestVRCGet.Install(packageName.Name));
                             addButton.text = "Add";
                             packageContainer.hierarchy.Add(addButton);
 
@@ -138,7 +140,9 @@ namespace net.rs64.VRCGetForUnityEditor
 
             async void CreatePackageRow(Package package, VisualElement packageVi)
             {
-                packageVi.hierarchy.Add(new Label(package.name));
+                var label = new Label(package.name);
+                label.AddToClassList("ContainsPackageText");
+                packageVi.hierarchy.Add(label);
 
                 var rightElement = new VisualElement();
                 rightElement.AddToClassList("PackageContainerRight");

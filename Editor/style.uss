@@ -1,16 +1,27 @@
 VisualElement {
     font-size: 16px;
 }
+
 .Header {
     font-size: 20px;
     color: white;
 }
-.PackageContainer{
+
+.PackageContainer {
     flex-direction: row;
     justify-content: space-between;
+
+    margin-left: 16px;
 }
 
-.PackageContainerRight{
+.PackageContainerRight {
     flex-direction: row;
     justify-content: flex-end;
+}
+
+.ContainsPackageText{
+    width: 75%;
+}
+.AddPackageText {
+    width: 90%;
 }

@@ -1,0 +1,13 @@
+{
+  "name": "net.rs64.vrc-get-for-unity-editor",
+  "displayName": "VRCGetForUnityEditor",
+  "version": "0.0.0",
+  "unity": "2022.3",
+  "description": "Non-destructive modification to Texture!",
+  "author": {
+    "name": "ReinaSakiria",
+    "url": "https://rs64.net/"
+  },
+  "url": "https://github.com/ReinaS-64892/TexTransTool",
+  "repo": "https://vpm.rs64.net/vpm.json"
+}

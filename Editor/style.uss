@@ -1,0 +1,13 @@
+VisualElement {
+    font-size: 16px;
+}
+
+.PackageContainer{
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.PackageContainerRight{
+    flex-direction: row;
+    justify-content: flex-end;
+}

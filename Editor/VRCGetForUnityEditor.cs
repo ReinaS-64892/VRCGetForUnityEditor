@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
 using System;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace net.rs64.VRCGetForUnityEditor
 {
@@ -29,79 +31,91 @@ namespace net.rs64.VRCGetForUnityEditor
             if (uss != null) { rootVisualElement.styleSheets.Add(uss); }
             else { Debug.LogWarning("スタイルが存在しません"); }
 
-            var project = RequestVRCGet.GetPackages();
+            var syncContext = SynchronizationContext.Current;
 
-            var reDrawButton = new Button(CreateGUI);
-            reDrawButton.text = "Refresh";
-            rootVisualElement.Add(reDrawButton);
-
-            rootVisualElement.Add(new Label($"ThisProjectVersion : {project.unity_version}"));
-
-            var scrollView = new ScrollView();
-            var content = scrollView.Q<VisualElement>("unity-content-container");
-
-            rootVisualElement.Add(scrollView);
-
-            var upgradeButton = new Button(RequestVRCGet.Upgrade);
-            upgradeButton.text = "Upgrade";
-            content.hierarchy.Add(upgradeButton);
-
-            content.hierarchy.Add(new Label("Packages---------"));
-
-            var packageContainer = new VisualElement();
-            content.hierarchy.Add(packageContainer);
-
-            foreach (var package in project.packages)
+            Task.Run(RequestVRCGet.GetPackages).ContinueWith(async (projectTask, _) =>
             {
-                var packageVi = new VisualElement();
-                packageVi.AddToClassList("PackageContainer");
+                var project = await projectTask;
 
-                packageVi.hierarchy.Add(new Label(package.name));
+                syncContext.Post(_ => //ポスト地獄...何とかならんの？？？
+                {
 
-                var rightElement = new VisualElement();
-                rightElement.AddToClassList("PackageContainerRight");
-                packageVi.hierarchy.Add(rightElement);
-                if (!TryCreateVersionSelector(package, rightElement)) { rightElement.hierarchy.Add(new Label(string.IsNullOrWhiteSpace(package.installed) ? "not installed" : package.installed)); }
+                    var reDrawButton = new Button(CreateGUI);
+                    reDrawButton.text = "Refresh";
+                    rootVisualElement.Add(reDrawButton);
 
-                var removeButton = new Button(() => { Debug.Log(RequestVRCGet.Remove(package.name)); });
-                removeButton.text = "Remove";
+                    rootVisualElement.Add(new Label($"ThisProjectVersion : {project.unity_version}"));
 
-                rightElement.hierarchy.Add(removeButton);
+                    var scrollView = new ScrollView();
+                    var content = scrollView.Q<VisualElement>("unity-content-container");
 
-                packageContainer.hierarchy.Add(packageVi);
-            }
+                    rootVisualElement.Add(scrollView);
 
-            static bool TryCreateVersionSelector(Package package, VisualElement packageVi)
-            {
-                if (string.IsNullOrWhiteSpace(package.locked) || string.IsNullOrWhiteSpace(package.installed)) { return false; }
+                    var upgradeButton = new Button(RequestVRCGet.Upgrade);
+                    upgradeButton.text = "Upgrade";
+                    content.hierarchy.Add(upgradeButton);
 
-                var versions = RequestVRCGet.GetVersions(package.name);
-                if (versions == null) { return false; }
+                    var containsPackagesHeader = new Label("ContainsPackages---------");
+                    containsPackagesHeader.AddToClassList("Header");
+                    content.hierarchy.Add(containsPackagesHeader);
 
-                var popup = new PopupField<string>(versions, package.installed);
-                popup.RegisterValueChangedCallback(v => RequestVRCGet.Install(package.name, v.newValue));
-                packageVi.hierarchy.Add(popup);
-                return true;
-            }
-            var addPackagesContainer = new VisualElement();
-            var addWindowButton = new Button(() => ShowAddPackages(addPackagesContainer));
-            addWindowButton.text = "ShowAddPackages";
-            content.hierarchy.Add(addWindowButton);
-            content.hierarchy.Add(addPackagesContainer);
+                    var packageContainer = new VisualElement();
+                    content.hierarchy.Add(packageContainer);
 
-            static void ShowAddPackages(VisualElement root)
+                    foreach (var package in project.packages)
+                    {
+                        var packageVi = new VisualElement();
+                        packageVi.AddToClassList("PackageContainer");
+
+                        CreatePackageRow(package, packageVi);
+
+                        packageContainer.hierarchy.Add(packageVi);
+                    }
+
+                    var addPackagesHeader = new Label("AddPackage---------");
+                    addPackagesHeader.AddToClassList("Header");
+                    content.hierarchy.Add(addPackagesHeader);
+                    var addPackagesContainer = new VisualElement();
+                    content.hierarchy.Add(addPackagesContainer);
+
+                    ShowAddPackages(addPackagesContainer);
+
+                }, null);
+
+            }, null);
+
+
+            async void ShowAddPackages(VisualElement root)
             {
                 root.hierarchy.Clear();
-                foreach (var url in RequestVRCGet.Repositories())
-                {
-                    var container = new Foldout();
-                    container.text = url;
-                    container.value = false;
-                    var foldingContainer = container.Q("unity-content");
-                    try
+                var repositories = await Task.Run(RequestVRCGet.Repositories);
+                syncContext.Post(_ =>
                     {
-                        var names = RequestVRCGet.PackageNames(url);
-                        if (names == null) { continue; }
+                        foreach (var url in repositories)
+                        {
+                            var container = new Foldout();
+                            container.text = url;
+                            container.value = false;
+                            var foldingContainer = container.Q("unity-content");
+                            try
+                            {
+                                CreatePackages(url, foldingContainer);
+                                root.hierarchy.Add(container);
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.LogError(e);
+                                Debug.LogError(url);
+                            }
+                        }
+                    }, null);
+
+                async void CreatePackages(string url, VisualElement foldingContainer)
+                {
+                    var names = await Task.Run(() => RequestVRCGet.PackageNames(url));
+                    syncContext.Post(_ =>
+                    {
+                        if (names == null) { return; }
                         foreach (var packageName in names)
                         {
                             var packageContainer = new VisualElement();
@@ -114,20 +128,41 @@ namespace net.rs64.VRCGetForUnityEditor
 
                             foldingContainer.hierarchy.Add(packageContainer);
                         }
-                        root.hierarchy.Add(container);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError(e);
-                        Debug.LogError(url);
-                    }
+                    }, null);
                 }
-
             }
 
+            async void CreatePackageRow(Package package, VisualElement packageVi)
+            {
+                packageVi.hierarchy.Add(new Label(package.name));
 
+                var rightElement = new VisualElement();
+                rightElement.AddToClassList("PackageContainerRight");
+                packageVi.hierarchy.Add(rightElement);
 
+                var versions = await Task.Run(() => RequestVRCGet.GetVersions(package.name));
+                syncContext.Post(_ =>
+                {
 
+                    if (string.IsNullOrWhiteSpace(package.locked) || string.IsNullOrWhiteSpace(package.installed) || versions == null)
+                    {
+                        rightElement.hierarchy.Add(new Label(string.IsNullOrWhiteSpace(package.installed) ? "not installed" : package.installed));
+                    }
+                    else
+                    {
+                        var popup = new PopupField<string>(versions, package.installed);
+                        popup.RegisterValueChangedCallback(v => RequestVRCGet.Install(package.name, v.newValue));
+                        rightElement.hierarchy.Add(popup);
+                    }
+
+                    var removeButton = new Button(() => { Debug.Log(RequestVRCGet.Remove(package.name)); });
+                    removeButton.text = "Remove";
+
+                    rightElement.hierarchy.Add(removeButton);
+
+                }, null);
+
+            }
 
         }
 

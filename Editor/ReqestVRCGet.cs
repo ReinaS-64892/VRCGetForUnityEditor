@@ -33,7 +33,8 @@ namespace net.rs64.VRCGetForUnityEditor
                 proses.StartInfo = VRCGetStartInfo(arguments);
                 proses.Start();
 
-                proses.WaitForExit(wait);
+                //待たなくても問題ないんやけど???
+                // proses.WaitForExit(wait);
                 // if (!proses.HasExited) { proses.Kill(); return null; }
                 // try { if (proses.ExitCode != 0) { return proses.StandardError.ReadToEnd(); } } catch (Exception e) { Debug.LogException(e); }
 

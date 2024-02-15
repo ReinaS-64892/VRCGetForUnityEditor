@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace net.rs64.VRCGetForUnityEditor
 {
@@ -36,6 +37,7 @@ namespace net.rs64.VRCGetForUnityEditor
             Task.Run(RequestVRCGet.GetPackages).ContinueWith(async (projectTask, _) =>
             {
                 var project = await projectTask;
+                project.packages = project.packages.OrderBy(i => i.name).ToArray();
 
                 syncContext.Post(_ => //ポスト地獄...何とかならんの？？？
                 {
@@ -89,6 +91,7 @@ namespace net.rs64.VRCGetForUnityEditor
             {
                 root.hierarchy.Clear();
                 var repositories = await Task.Run(RequestVRCGet.Repositories);
+                repositories.Sort();
                 syncContext.Post(_ =>
                     {
                         foreach (var url in repositories)
@@ -113,6 +116,7 @@ namespace net.rs64.VRCGetForUnityEditor
                 async void CreatePackages(string url, VisualElement foldingContainer)
                 {
                     var names = await Task.Run(() => RequestVRCGet.PackageNames(url));
+                    names.Sort();
                     syncContext.Post(_ =>
                     {
                         if (names == null) { return; }
@@ -140,7 +144,7 @@ namespace net.rs64.VRCGetForUnityEditor
                 rightElement.AddToClassList("PackageContainerRight");
                 packageVi.hierarchy.Add(rightElement);
 
-                var versions = await Task.Run(() => RequestVRCGet.GetVersions(package.name));
+                var versions = await Task.Run(() => { var versions = RequestVRCGet.GetVersions(package.name); versions.Sort(); versions.Reverse(); return versions; });
                 syncContext.Post(_ =>
                 {
 

@@ -61,7 +61,7 @@ namespace net.rs64.VRCGetForUnityEditor
                 var rightElement = new VisualElement();
                 rightElement.AddToClassList("PackageContainerRight");
                 packageVi.hierarchy.Add(rightElement);
-                if (!TryCreateVersionSelector(package, rightElement)) { rightElement.hierarchy.Add(new Label(package.installed)); }
+                if (!TryCreateVersionSelector(package, rightElement)) { rightElement.hierarchy.Add(new Label(string.IsNullOrWhiteSpace(package.installed) ? "not installed" : package.installed)); }
 
                 var removeButton = new Button(() => { Debug.Log(RequestVRCGet.Remove(package.name)); });
                 removeButton.text = "Remove";
@@ -73,7 +73,7 @@ namespace net.rs64.VRCGetForUnityEditor
 
             static bool TryCreateVersionSelector(Package package, VisualElement packageVi)
             {
-                if (string.IsNullOrWhiteSpace(package.locked)) { return false; }
+                if (string.IsNullOrWhiteSpace(package.locked) || string.IsNullOrWhiteSpace(package.installed)) { return false; }
 
                 var versions = RequestVRCGet.GetVersions(package.name);
                 if (versions == null) { return false; }

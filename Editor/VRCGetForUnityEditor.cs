@@ -105,6 +105,19 @@ namespace net.rs64.VRCGetForUnityEditor
                         Debug.LogError(url);
                     }
                 }
+                var addRepoContainer = new VisualElement();
+                addRepoContainer.AddToClassList("PackageContainer");
+
+                var textF = new TextField();
+                textF.label = "AddRepo";
+                textF.AddToClassList("ContainsPackageText");
+                addRepoContainer.hierarchy.Add(textF);
+
+                var addButton = new Button(() => RequestVRCGet.AddRepo(textF.value));
+                addButton.text = "Add";
+                addRepoContainer.hierarchy.Add(addButton);
+
+                root.hierarchy.Add(addRepoContainer);
             }
 
             async void CreatePackages(string url, VisualElement foldingContainer)

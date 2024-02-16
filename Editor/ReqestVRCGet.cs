@@ -88,6 +88,11 @@ namespace net.rs64.VRCGetForUnityEditor
             RequestVoid("upgrade");
         }
 
+        public static void AddRepo(string pathOrUrl)
+        {
+            RequestVoid($"repo add {pathOrUrl}");
+        }
+
         public static List<string> Repositories()//URLが返ってくる
         {
             return Request("repo list").Split("\n").Select(i =>
